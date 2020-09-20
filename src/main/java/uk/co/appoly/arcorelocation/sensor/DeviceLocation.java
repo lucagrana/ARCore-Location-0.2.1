@@ -10,9 +10,7 @@ import android.widget.Toast;
 
 import uk.co.appoly.arcorelocation.LocationScene;
 
-/**
- * Created by John on 02/03/2018.
- */
+
 
 public class DeviceLocation implements LocationListener {
 

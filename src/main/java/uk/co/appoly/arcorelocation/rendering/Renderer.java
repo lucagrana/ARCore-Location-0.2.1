@@ -2,9 +2,6 @@ package uk.co.appoly.arcorelocation.rendering;
 
 import android.content.Context;
 
-/**
- * Created by John on 16/03/2018.
- */
 
 public class Renderer {
 

@@ -2,6 +2,7 @@ package uk.co.appoly.arcorelocation;
 
 import android.app.Activity;
 import android.content.Context;
+import android.location.Location;
 import android.os.Handler;
 
 import com.google.ar.core.Anchor;
@@ -16,15 +17,13 @@ import uk.co.appoly.arcorelocation.sensor.DeviceLocation;
 import uk.co.appoly.arcorelocation.sensor.DeviceOrientation;
 import uk.co.appoly.arcorelocation.utils.LocationUtils;
 
-/**
- * Created by John on 02/03/2018.
- */
+
 
 public class LocationScene {
 
     // Anchors are currently re-drawn on an interval. There are likely better
     // ways of doing this, however it's sufficient for now.
-    private final static int ANCHOR_REFRESH_INTERVAL = 1000 * 30; // 8 seconds
+    private final static int ANCHOR_REFRESH_INTERVAL = 1000 * 300; // 300 seconds
     public static Context mContext;
     public static Activity mActivity;
 
@@ -32,8 +31,9 @@ public class LocationScene {
     private final float[] mAnchorMatrix = new float[16];
     public ArrayList<LocationMarker> mLocationMarkers = new ArrayList<>();
 
-    public DeviceLocation deviceLocation;
+    //public DeviceLocation deviceLocation;
     public DeviceOrientation deviceOrientation;
+    public Location deviceLocation;
 
     // Limit of where to draw markers within AR scene.
     // They will auto scale, but this helps prevents rendering issues
@@ -61,8 +61,11 @@ public class LocationScene {
         this.mSession = mSession;
 
         startCalculationTask();
+        deviceLocation = new Location("");
+        deviceLocation.setLatitude(45.49454379764627);
+        deviceLocation.setLongitude(9.292845442447572);
+        deviceLocation.setAltitude(120.1403479494361);
 
-        deviceLocation = new DeviceLocation();
         deviceOrientation = new DeviceOrientation();
     }
 
@@ -105,9 +108,9 @@ public class LocationScene {
                 int markerDistance = (int) Math.ceil(
                         LocationUtils.distance(
                                 locationMarker.latitude,
-                                deviceLocation.currentBestLocation.getLatitude(),
+                                deviceLocation./*currentBestLocation.*/getLatitude(),
                                 locationMarker.longitude,
-                                deviceLocation.currentBestLocation.getLongitude(),
+                                deviceLocation./*currentBestLocation.*/getLongitude(),
                                 0,
                                 0)
                 );
@@ -140,6 +143,7 @@ public class LocationScene {
                 locationMarker.renderer.draw(viewMatrix, projectionMatrix, lightIntensity);
 
 
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -156,16 +160,17 @@ public class LocationScene {
                     int markerDistance = (int) Math.round(
                             LocationUtils.distance(
                                     mLocationMarkers.get(i).latitude,
-                                    deviceLocation.currentBestLocation.getLatitude(),
+
+                                    deviceLocation/*.currentBestLocation*/.getLatitude(),
                                     mLocationMarkers.get(i).longitude,
-                                    deviceLocation.currentBestLocation.getLongitude(),
+                                    deviceLocation/*.currentBestLocation*/.getLongitude(),
                                     0,
                                     0)
                     );
 
                     float markerBearing = deviceOrientation.currentDegree + (float) LocationUtils.bearing(
-                            deviceLocation.currentBestLocation.getLatitude(),
-                            deviceLocation.currentBestLocation.getLongitude(),
+                            deviceLocation/*.currentBestLocation*/.getLatitude(),
+                            deviceLocation/*.currentBestLocation*/.getLongitude(),
                             mLocationMarkers.get(i).latitude,
                             mLocationMarkers.get(i).longitude);
 
