@@ -40,7 +40,7 @@ public class LocationScene {
     // Limit of where to draw markers within AR scene.
     // They will auto scale, but this helps prevents rendering issues
     private int distanceLimit = 45;
-    private int j = 0;
+    private static int maxAnchor = 0;
     private int y = 0;
     // Bearing adjustment. Can be set to calibrate with true north
     private int bearingAdjustment = 0;
@@ -232,8 +232,11 @@ public class LocationScene {
                                         .compose(Pose.makeTranslation(xRotated, y/* + (float) heightAdjustment*/, zRotated)));
 
                         mLocationMarkers.get(i).anchor = newAnchor;
+                        if (maxAnchor<8) {
+                            mLocationMarkers.get(i).renderer.createOnGlThread(mContext, markerDistance);
+                            maxAnchor++;
+                        }
 
-                        mLocationMarkers.get(i).renderer.createOnGlThread(mContext, markerDistance);
 
 
 
@@ -283,6 +286,7 @@ public class LocationScene {
         deviceLocation.setLongitude(latLon[1]);
         deviceOrientation.currentDegree = (float) Math.toRadians(azimuth);
         deviceOrientation.pitch= (float) Math.toRadians(pitch);
+        maxAnchor=0;
         //DeviceOrientation.fixOrientation(pose.extractRotation());
         //IN BASE A QUESTO CALCOLO LA NUOVA DEVICE LOCATION
         /*Location nuovaPosizione = new Location();
