@@ -39,7 +39,7 @@ public class LocationScene {
 
     // Limit of where to draw markers within AR scene.
     // They will auto scale, but this helps prevents rendering issues
-    private int distanceLimit = 50;
+    private int distanceLimit = 45;
     private int j = 0;
     private int y = 0;
     // Bearing adjustment. Can be set to calibrate with true north
@@ -275,13 +275,14 @@ public class LocationScene {
     void stopCalculationTask() {
         mHandler.removeCallbacks(anchorRefreshTask);
     }
-    public static void updateAnchors(double qrcodeLat, double qrcodeLon, Pose pose){
+
+    public static void updateAnchors(double[] latLon, float pitch, float azimuth ){
         anchorsNeedRefresh = true;
-        /*deviceLocation = new Location("");
-        deviceLocation.setLatitude(qrcodeLat);
-        deviceLocation.setLongitude(qrcodeLon);*/
-        deviceOrientation.currentDegree = deviceOrientation.currentDegree *3f;
-        deviceOrientation.pitch= deviceOrientation.pitch * 37.2957795f;
+        deviceLocation = new Location("");
+        deviceLocation.setLatitude(latLon[0]);
+        deviceLocation.setLongitude(latLon[1]);
+        deviceOrientation.currentDegree = (float) Math.toRadians(azimuth);
+        deviceOrientation.pitch= (float) Math.toRadians(pitch);
         //DeviceOrientation.fixOrientation(pose.extractRotation());
         //IN BASE A QUESTO CALCOLO LA NUOVA DEVICE LOCATION
         /*Location nuovaPosizione = new Location();
