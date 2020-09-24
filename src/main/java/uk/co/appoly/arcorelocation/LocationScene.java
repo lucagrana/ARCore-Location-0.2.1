@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.location.Location;
 import android.os.Handler;
+import android.util.Log;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.Frame;
@@ -23,7 +24,8 @@ public class LocationScene {
 
     // Anchors are currently re-drawn on an interval. There are likely better
     // ways of doing this, however it's sufficient for now.
-    private final static int ANCHOR_REFRESH_INTERVAL = 1000 * 300; // 300 seconds
+    private final static int ANCHOR_REFRESH_INTERVAL = 1000 * 3000; // 1 second
+
     public static Context mContext;
     public static Activity mActivity;
 
@@ -32,18 +34,19 @@ public class LocationScene {
     public ArrayList<LocationMarker> mLocationMarkers = new ArrayList<>();
 
     //public DeviceLocation deviceLocation;
-    public DeviceOrientation deviceOrientation;
-    public Location deviceLocation;
+    public static DeviceOrientation deviceOrientation;
+    public static Location deviceLocation;
 
     // Limit of where to draw markers within AR scene.
     // They will auto scale, but this helps prevents rendering issues
     private int distanceLimit = 50;
-
+    private int j = 0;
+    private int y = 0;
     // Bearing adjustment. Can be set to calibrate with true north
     private int bearingAdjustment = 0;
 
     private String TAG = "LocationScene";
-    private boolean anchorsNeedRefresh = true;
+    private static boolean anchorsNeedRefresh = true;
     private Handler mHandler = new Handler();
 
     Runnable anchorRefreshTask = new Runnable() {
@@ -77,6 +80,7 @@ public class LocationScene {
         // Needs to occur in the draw method, as we need details about the camera
         refreshAnchorsIfRequired(frame);
 
+
         // Draw each anchor with it's individual renderer.
         drawMarkers(frame);
 
@@ -91,142 +95,158 @@ public class LocationScene {
     }
 
     public void drawMarkers(Frame frame) {
-        for (LocationMarker locationMarker : mLocationMarkers) {
 
-            try {
-                // Get the current pose of an Anchor in world space. The Anchor pose is updated
-                // during calls to session.update() as ARCore refines its estimate of the world.
+        //if (j<4){
 
-                float translation[] = new float[3];
-                float rotation[] = new float[4];
-                locationMarker.anchor.getPose().getTranslation(translation, 0);
-                frame.getCamera().getPose().getRotationQuaternion(rotation, 0);
+            for (LocationMarker locationMarker : mLocationMarkers) {
 
-                Pose rotatedPose = new Pose(translation, rotation);
-                rotatedPose.toMatrix(mAnchorMatrix, 0);
-
-                int markerDistance = (int) Math.ceil(
-                        LocationUtils.distance(
-                                locationMarker.latitude,
-                                deviceLocation./*currentBestLocation.*/getLatitude(),
-                                locationMarker.longitude,
-                                deviceLocation./*currentBestLocation.*/getLongitude(),
-                                0,
-                                0)
-                );
-
-                // Limit the distance of the Anchor within the scene.
-                // Prevents uk.co.appoly.arcorelocation.rendering issues.
-                int renderDistance = markerDistance;
-                if (renderDistance > distanceLimit)
-                    renderDistance = distanceLimit;
-
-
-                float[] projectionMatrix = new float[16];
-                frame.getCamera().getProjectionMatrix(projectionMatrix, 0, 0.1f, 100.0f);
-
-                // Get camera matrix and draw.
-                float[] viewMatrix = new float[16];
-                frame.getCamera().getViewMatrix(viewMatrix, 0);
-
-                // Make sure marker stays the same size on screen, no matter the distance
-                float scale = 3.0F / 10.0F * (float) renderDistance;
-
-                // Distant markers a little smaller
-                if (markerDistance > 3000)
-                    scale *= 0.75F;
-
-                // Compute lighting from average intensity of the image.
-                final float lightIntensity = frame.getLightEstimate().getPixelIntensity();
-
-                locationMarker.renderer.updateModelMatrix(mAnchorMatrix, scale);
-                locationMarker.renderer.draw(viewMatrix, projectionMatrix, lightIntensity);
-
-
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public void refreshAnchorsIfRequired(Frame frame) {
-        if (anchorsNeedRefresh) {
-            anchorsNeedRefresh = false;
-
-            for (int i = 0; i < mLocationMarkers.size(); i++) {
                 try {
+                    // Get the current pose of an Anchor in world space. The Anchor pose is updated
+                    // during calls to session.update() as ARCore refines its estimate of the world.
 
-                    int markerDistance = (int) Math.round(
+                    float translation[] = new float[3];
+                    float rotation[] = new float[4];
+                    locationMarker.anchor.getPose().getTranslation(translation, 0);
+                    frame.getCamera().getPose().getRotationQuaternion(rotation, 0);
+
+                    Pose rotatedPose = new Pose(translation, rotation);
+                    rotatedPose.toMatrix(mAnchorMatrix, 0);
+
+                    int markerDistance = (int) Math.ceil(
                             LocationUtils.distance(
-                                    mLocationMarkers.get(i).latitude,
-
-                                    deviceLocation/*.currentBestLocation*/.getLatitude(),
-                                    mLocationMarkers.get(i).longitude,
-                                    deviceLocation/*.currentBestLocation*/.getLongitude(),
+                                    locationMarker.latitude,
+                                    deviceLocation./*currentBestLocation.*/getLatitude(),
+                                    locationMarker.longitude,
+                                    deviceLocation./*currentBestLocation.*/getLongitude(),
                                     0,
                                     0)
                     );
 
-                    float markerBearing = deviceOrientation.currentDegree + (float) LocationUtils.bearing(
-                            deviceLocation/*.currentBestLocation*/.getLatitude(),
-                            deviceLocation/*.currentBestLocation*/.getLongitude(),
-                            mLocationMarkers.get(i).latitude,
-                            mLocationMarkers.get(i).longitude);
-
-                    // Bearing adjustment can be set if you are trying to
-                    // correct the heading of north - setBearingAdjustment(10)
-                    markerBearing = markerBearing + bearingAdjustment;
-                    markerBearing = markerBearing % 360;
-
-                    double rotation = Math.floor(markerBearing);
-
-                    // When pointing device upwards (camera towards sky)
-                    // the compass bearing can flip.
-                    // In experiments this seems to happen at pitch~=-25
-                    if (deviceOrientation.pitch > -25)
-                        rotation = rotation * Math.PI / 180;
-
-                    int renderDistance = markerDistance;
-
                     // Limit the distance of the Anchor within the scene.
-                    // Prevents rendering issues.
+                    // Prevents uk.co.appoly.arcorelocation.rendering issues.
+                    int renderDistance = markerDistance;
                     if (renderDistance > distanceLimit)
                         renderDistance = distanceLimit;
 
-                    // Adjustment to add markers on horizon, instead of just directly in front of camera
-                    double heightAdjustment = Math.round(renderDistance * (Math.tan(Math.toRadians(deviceOrientation.pitch))));
 
-                    // Raise distant markers for better illusion of distance
-                    // Hacky - but it works as a temporary measure
-                    int cappedRealDistance = markerDistance > 500 ? 500 : markerDistance;
-                    if (renderDistance != markerDistance)
-                        heightAdjustment += 0.01F * (cappedRealDistance - renderDistance);
+                    float[] projectionMatrix = new float[16];
+                    frame.getCamera().getProjectionMatrix(projectionMatrix, 0, 0.1f, 100.0f);
 
-                    float x = 0;
-                    float z = -renderDistance;
+                    // Get camera matrix and draw.
+                    float[] viewMatrix = new float[16];
+                    frame.getCamera().getViewMatrix(viewMatrix, 0);
 
-                    float zRotated = (float) (z * Math.cos(rotation) - x * Math.sin(rotation));
-                    float xRotated = (float) -(z * Math.sin(rotation) + x * Math.cos(rotation));
+                    // Make sure marker stays the same size on screen, no matter the distance
+                    float scale = 5.0F / 10.0F * (float) renderDistance;
 
-                    // Current camera height
-                    float y = frame.getCamera().getDisplayOrientedPose().ty();
+                    // Distant markers a little smaller --> Non mi serve
+                    /*if (markerDistance > 3000)
+                        scale *= 0.75F;*/
 
-                    // Don't immediately assign newly created anchor in-case of exceptions
-                    Anchor newAnchor = mSession.createAnchor(
-                            frame.getCamera().getPose()
-                                    .compose(Pose.makeTranslation(xRotated, y + (float) heightAdjustment, zRotated)));
+                    // Compute lighting from average intensity of the image.
+                    final float lightIntensity = frame.getLightEstimate().getPixelIntensity();
 
-                    mLocationMarkers.get(i).anchor = newAnchor;
+                    locationMarker.renderer.updateModelMatrix(mAnchorMatrix, scale);
+                    locationMarker.renderer.draw(viewMatrix, projectionMatrix, lightIntensity);
 
-                    mLocationMarkers.get(i).renderer.createOnGlThread(mContext, markerDistance);
+
 
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+
+        //}
+    }
+
+    public void refreshAnchorsIfRequired(Frame frame) {
+        //if (y<4){
+
+            if (anchorsNeedRefresh) {
+                anchorsNeedRefresh = false;
+
+
+                for (int i = 0; i < mLocationMarkers.size(); i++) {
+
+                    try {
+
+                        int markerDistance = (int) Math.round(
+                                LocationUtils.distance(
+                                        mLocationMarkers.get(i).latitude,
+
+                                        deviceLocation/*.currentBestLocation*/.getLatitude(),
+                                        mLocationMarkers.get(i).longitude,
+                                        deviceLocation/*.currentBestLocation*/.getLongitude(),
+                                        0,
+                                        0)
+                        );
+
+                        float markerBearing = deviceOrientation.currentDegree + (float) LocationUtils.bearing(
+                                deviceLocation/*.currentBestLocation*/.getLatitude(),
+                                deviceLocation/*.currentBestLocation*/.getLongitude(),
+                                mLocationMarkers.get(i).latitude,
+                                mLocationMarkers.get(i).longitude);
+
+                        // Bearing adjustment can be set if you are trying to
+                        // correct the heading of north - setBearingAdjustment(10)
+                        markerBearing = markerBearing + bearingAdjustment;
+                        markerBearing = markerBearing % 360;
+
+                        double rotation = Math.floor(markerBearing);
+
+                        // When pointing device upwards (camera towards sky)
+                        // the compass bearing can flip.
+                        // In experiments this seems to happen at pitch~=-25
+                        if (deviceOrientation.pitch > -25)
+                            rotation = rotation * Math.PI / 180;
+
+                        int renderDistance = markerDistance;
+
+                        // Limit the distance of the Anchor within the scene.
+                        // Prevents rendering issues.
+                        if (renderDistance > distanceLimit)
+                            renderDistance = distanceLimit;
+
+                        // Adjustment to add markers on horizon, instead of just directly in front of camera
+                        double heightAdjustment = Math.round(renderDistance * (Math.tan(Math.toRadians(deviceOrientation.pitch))));
+
+                        // Raise distant markers for better illusion of distance
+                        // Hacky - but it works as a temporary measure
+                        int cappedRealDistance = markerDistance > 500 ? 500 : markerDistance;
+                        if (renderDistance != markerDistance)
+                            heightAdjustment += 0.01F * (cappedRealDistance - renderDistance);
+
+                        float x = 0;
+                        float z = -renderDistance;
+
+                        float zRotated = (float) (z * Math.cos(rotation) - x * Math.sin(rotation));
+                        float xRotated = (float) -(z * Math.sin(rotation) + x * Math.cos(rotation));
+
+                        // Current camera height
+                        float y = frame.getCamera().getDisplayOrientedPose().ty();
+
+
+                        // Don't immediately assign newly created anchor in-case of exceptions
+                        Anchor newAnchor = mSession.createAnchor(
+                                frame.getCamera().getPose()
+                                        .compose(Pose.makeTranslation(xRotated, y/* + (float) heightAdjustment*/, zRotated)));
+
+                        mLocationMarkers.get(i).anchor = newAnchor;
+
+                        mLocationMarkers.get(i).renderer.createOnGlThread(mContext, markerDistance);
+
+
+
+
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
 
             }
-        }
+        //}
     }
 
 
@@ -254,5 +274,21 @@ public class LocationScene {
 
     void stopCalculationTask() {
         mHandler.removeCallbacks(anchorRefreshTask);
+    }
+    public static void updateAnchors(double qrcodeLat, double qrcodeLon, Pose pose){
+        anchorsNeedRefresh = true;
+        /*deviceLocation = new Location("");
+        deviceLocation.setLatitude(qrcodeLat);
+        deviceLocation.setLongitude(qrcodeLon);*/
+        deviceOrientation.currentDegree = deviceOrientation.currentDegree *3f;
+        deviceOrientation.pitch= deviceOrientation.pitch * 37.2957795f;
+        //DeviceOrientation.fixOrientation(pose.extractRotation());
+        //IN BASE A QUESTO CALCOLO LA NUOVA DEVICE LOCATION
+        /*Location nuovaPosizione = new Location();
+        deviceLocation = nuovaPosizione;
+        j=0; //Li azzero così riaggiorno tutte le anchors ???
+        y=0;
+        //DOPO UN SECONDO DOVREBBERO COMPARIRE TUTTE LE ANCORE AD UNA DISTANZA DI 50 METRI DALLA NUOVA POSIZIONE
+         */
     }
 }

@@ -5,12 +5,13 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.util.Log;
+
+import com.google.ar.core.Pose;
 
 import uk.co.appoly.arcorelocation.LocationScene;
 
-/**
- * Created by John on 02/03/2018.
- */
+
 
 public class DeviceOrientation implements SensorEventListener {
 
@@ -37,7 +38,7 @@ public class DeviceOrientation implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-
+        Log.d("sensori", "on sesor changed");
         // Get the device heading
         float degree = -Math.round( event.values[0] );
 
@@ -57,9 +58,38 @@ public class DeviceOrientation implements SensorEventListener {
         if (mags != null && accels != null) {
             gravity = new float[9];
             magnetic = new float[9];
+            /* public static boolean getRotationMatrix (float[] R,
+                float[] I,
+                float[] gravity,
+                float[] geomagnetic)
+            R: è un array di 9 float che contengono la matrice di rotazione R quando questa funzione ritorna. R può essere nullo.
+            I: è un array di 9 float che contengono la matrice di rotazione I quando questa funzione ritorna. I può essere nullo.
+            gravity: è un array di 3 float contenenti il ​​vettore di gravità espresso nelle coordinate del dispositivo.
+            geomagnetic: è un array di 3 float contenente il vettore geomagnetico espresso nelle coordinate del dispositivo
+
+
+            R è la matrice identità quando il dispositivo è allineato con il sistema di coordinate del mondo, cioè quando l'asse X
+            del dispositivo punta verso est, l'asse Y punta al Polo Nord e il dispositivo è rivolto verso il cielo.
+
+            I è una matrice di rotazione che trasforma il vettore geomagnetico nello stesso spazio delle coordinate della gravità
+            (lo spazio delle coordinate mondo). I è una semplice rotazione attorno all'asse X.
+            https://developer.android.com/reference/android/hardware/SensorManager#getRotationMatrix(float[],%20float[],%20float[],%20float[])
+             */
             SensorManager.getRotationMatrix(gravity, magnetic, accels, mags);
             float[] outGravity = new float[9];
+            //RUOTA LA MATRICE DI ROTAZIONE FORNITA (gravity) IN MODO CHE SIA ESPRESSA IN UN DIVERSO SISTEMA DI COORDINATE
+            /*
+            remapCoordinateSystem (float[] inR, int X, int Y, float[] outR)
+            inR: la matrice di rotazione da trasformare. Di solito è la matrice restituita da getRotationMatrix
+            X definisce l'asse del nuovo sistema di coordinate che coincide con l'asse X del sistema di coordinate originale.
+            Y definisce l'asse del nuovo sistema di coordinate che coincide con l'asse Y del sistema di coordinate originale
+            outR la matrice di rotazione trasformata. inR e outR non dovrebbero essere lo stesso array
+            https://developer.android.com/reference/android/hardware/SensorManager#remapCoordinateSystem(float[],%20int,%20int,%20float[])
+             */
             SensorManager.remapCoordinateSystem(gravity, SensorManager.AXIS_X,SensorManager.AXIS_Z, outGravity);
+
+            //getOrientation computa l'orientamento del dispositivo in base alla matrice di rotazione (outGravity)
+            //https://developer.android.com/reference/android/hardware/SensorManager#getOrientation(float[],%20float[])
             SensorManager.getOrientation(outGravity, values);
 
             azimuth = values[0] * 57.2957795f;
@@ -68,6 +98,21 @@ public class DeviceOrientation implements SensorEventListener {
             mags = null;
             accels = null;
         }
+    }
+    public static void fixOrientation(Pose pose){
+        /*METODO CHE RICHIAMO NEL MOMENTO IN CUI RICONOSCO UN QR CODE
+        PER RIAGGIORNARE LE ANCORE CON I IL NUOVO ORIENTAMENTO DEVO ARRIVARE A FIXARE pitch e currentDegree.
+        in particolare currentDegree il quale è utilizzato, insieme alla posizione, per il calcolo del marker bearing.
+
+        Immagino di dover riapplicare i metodi utilizzati sopra con dei dati risultanti dal riconoscimento del qrcode.
+
+        TODO --> capire meglio gli step di onSensorChanged e capire quali dati passare a fixOrientation
+         */
+
+        float[] rotationMatrix;
+        rotationMatrix=pose.getRotationQuaternion();
+
+
     }
 
     @Override
